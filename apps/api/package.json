@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "node --import tsx prisma/seed.ts",
     "feedback:list": "node --import tsx scripts/feedback-list.ts",
-    "test:production": "node --import tsx scripts/smoke-production.ts"
+    "test:production": "node --import tsx scripts/smoke-production.ts",
+    "users:approve": "node --import tsx scripts/approve-user.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",

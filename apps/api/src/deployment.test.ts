@@ -77,3 +77,11 @@ test("Render origin берётся из служебной переменной 
   assert.equal(parseSettings({...base,SERVE_WEB:"1",RENDER_EXTERNAL_URL:"https://other.onrender.com"}).WEB_ORIGIN,"https://demo.onrender.com");
   assert.throws(()=>parseSettings({...base,WEB_ORIGIN:undefined,SERVE_WEB:"0",RENDER_EXTERNAL_URL:"https://ignored.onrender.com"}),/HTTPS/);
 });
+
+test("manual работает в production без почтовых секретов и не отправляет запросы",async()=>{
+  const c=parseSettings({...base,MAIL_MODE:"manual",BREVO_API_KEY:undefined,BREVO_SENDER_EMAIL:undefined});
+  let calls=0;const mailer=createMailer(c,{fetch:async()=>{calls++;throw new Error("unexpected-network");}});
+  assert.equal(mailer.mode,"manual");
+  await mailer.sendVerification({to:"fixture@test.invalid",url:"https://demo.invalid/#token=private"});
+  assert.equal(calls,0);
+});

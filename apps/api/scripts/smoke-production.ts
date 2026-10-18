@@ -42,7 +42,7 @@ try{
   const origin="https://smoke.studentconnect.invalid",base=`http://127.0.0.1:${port}`;
   child=spawn(process.execPath,["dist/server.js"],{
     cwd:fileURLToPath(new URL("..",import.meta.url)),
-    env:{...process.env,NODE_ENV:"production",SERVE_WEB:"1",PORT:String(port),WEB_ORIGIN:"",RENDER_EXTERNAL_URL:origin,TRUST_PROXY:"1",COOKIE_SAME_SITE:"lax",MAIL_MODE:"brevo",BREVO_API_KEY:"isolated-fixture-not-real",BREVO_SENDER_EMAIL:"sender@test.invalid",DATABASE_URL:`postgresql://postgres:postgres@${dbServer.getServerConn()}/postgres?connection_limit=1&sslmode=disable`},
+    env:{...process.env,NODE_ENV:"production",SERVE_WEB:"1",PORT:String(port),WEB_ORIGIN:"",RENDER_EXTERNAL_URL:origin,TRUST_PROXY:"1",COOKIE_SAME_SITE:"lax",MAIL_MODE:"manual",BREVO_API_KEY:undefined,BREVO_SENDER_EMAIL:undefined,DATABASE_URL:`postgresql://postgres:postgres@${dbServer.getServerConn()}/postgres?connection_limit=1&sslmode=disable`},
     stdio:["ignore","pipe","pipe"],
   });
   child.stdout?.on("data",chunk=>{output+=chunk.toString();});child.stderr?.on("data",chunk=>{output+=chunk.toString();});

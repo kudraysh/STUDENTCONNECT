@@ -67,11 +67,11 @@ export type User = PublicUser & {
   phone: string | null;
   emailVerifiedAt: string | null;
 };
-export type Delivery = { mode: "console" | "smtp" | "brevo"; sent: boolean };
+export type Delivery = { mode: "console" | "smtp" | "brevo" | "manual"; sent: boolean };
 export type Session = {
   user: User;
   csrfToken: string;
-  mailMode?: "console" | "smtp" | "brevo";
+  mailMode?: "console" | "smtp" | "brevo" | "manual";
   delivery?: Delivery;
 };
 export const errorMessage = (error: unknown) =>

@@ -7,7 +7,7 @@ const schema=z.object({
   SERVE_WEB:z.enum(["0","1"]).default("0"),
   COOKIE_SAME_SITE:z.enum(["lax","none","strict"]).default("lax"),
   TRUST_PROXY:z.enum(["0","1"]).default("0"),
-  MAIL_MODE:z.enum(["console","smtp","brevo"]).default("console"),
+  MAIL_MODE:z.enum(["console","smtp","brevo","manual"]).default("console"),
   SMTP_HOST:z.string().optional(),
   SMTP_PORT:z.coerce.number().int().positive().default(587),
   SMTP_USER:z.string().optional(),

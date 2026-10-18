@@ -23,12 +23,6 @@ services:
       - key: VITE_API_URL
         value: ""
       - key: MAIL_MODE
-        value: brevo
-      - key: BREVO_SENDER_NAME
-        value: StudentConnect
+        value: manual
       - key: DATABASE_URL
-        sync: false
-      - key: BREVO_API_KEY
-        sync: false
-      - key: BREVO_SENDER_EMAIL
         sync: false

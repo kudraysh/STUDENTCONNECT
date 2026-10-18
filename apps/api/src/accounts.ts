@@ -167,6 +167,7 @@ export function accountRouter({
     };
   };
   async function deliver(email: string, token: string) {
+    if (mailer.mode === "manual") return {mode: "manual", sent: false};
     try {
       await mailer.sendVerification({
         to: email,

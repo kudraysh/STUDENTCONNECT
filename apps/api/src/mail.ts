@@ -1,11 +1,11 @@
 import nodemailer from "nodemailer";
 export type VerificationMail = { to: string; url: string };
 export type Mailer = {
-  mode: "console" | "smtp" | "brevo";
+  mode: "console" | "smtp" | "brevo" | "manual";
   sendVerification: (mail: VerificationMail) => Promise<void>;
 };
 export function createMailer(options: {
-  MAIL_MODE: "console" | "smtp" | "brevo";
+  MAIL_MODE: "console" | "smtp" | "brevo" | "manual";
   SMTP_HOST?: string;
   SMTP_PORT: number;
   SMTP_USER?: string;
@@ -15,6 +15,8 @@ export function createMailer(options: {
   BREVO_SENDER_EMAIL?: string;
   BREVO_SENDER_NAME?: string;
 }, dependencies: {fetch?: typeof fetch} = {}): Mailer {
+  // Закрытое демо: письмо и токен не отправляются и не попадают в логи.
+  if (options.MAIL_MODE === "manual") return {mode:"manual", async sendVerification() {}};
   if (options.MAIL_MODE === "console")
     return {
       mode: "console",

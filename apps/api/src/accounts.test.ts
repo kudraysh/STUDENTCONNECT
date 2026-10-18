@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import request from "supertest";
 import sharp from "sharp";
 import { createApp } from "./app.js";
+import { approveDemoUser } from "./manualApproval.js";
 import { hashToken } from "./security.js";
 import type { VerificationMail } from "./mail.js";
 
@@ -105,6 +106,25 @@ test(
       bio: "Баскетбол и код",
       interestIds: [cs2.id],
     };
+    await t.test("закрытое демо: без письма и доступа до ручного допуска, токены отзываются", async()=>{
+      let deliveries=0;
+      const manualApp=createApp({origin,checkDatabase:async()=>{},accounts:{db,origin,cookie:{production:false,sameSite:"lax"},rateLimitMax:1000,mailer:{mode:"manual",async sendVerification(){deliveries++;}}}});
+      const agent=request.agent(manualApp);
+      const registered=await agent.post("/api/auth/register").set("Origin",origin).send({...payload,email:"manual@test.invalid",nickname:"manual_tester"});
+      assert.equal(registered.status,201);
+      assert.deepEqual(registered.body.delivery,{mode:"manual",sent:false});
+      assert.equal(deliveries,0);
+      assert.equal((await agent.get("/api/people")).status,403);
+      assert.equal((await agent.get("/api/auth/session")).body.user.emailVerifiedAt,null);
+      assert.ok(await db.emailVerification.count({where:{userId:registered.body.user.id}}));
+      await assert.rejects(approveDemoUser(db,"missing@test.invalid"),/Аккаунт не найден/);
+      assert.equal((await approveDemoUser(db,"manual@test.invalid")).changed,true);
+      assert.equal((await approveDemoUser(db,"manual@test.invalid")).changed,false);
+      assert.equal(await db.emailVerification.count({where:{userId:registered.body.user.id}}),0);
+      assert.ok((await agent.get("/api/auth/session")).body.user.emailVerifiedAt);
+      assert.equal((await agent.get("/api/people")).status,200);
+      await db.user.delete({where:{id:registered.body.user.id}});
+    });
     const alice = request.agent(app);
     let csrf = "";
     let userId = "";

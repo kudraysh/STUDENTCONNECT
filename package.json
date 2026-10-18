@@ -19,7 +19,8 @@
     "feedback:list": "npm run feedback:list -w apps/api --",
     "start": "npm run start -w apps/api",
     "deploy:start": "npm run db:migrate && npm run db:seed && npm start",
-    "test:production": "npm run build && npm run test:production -w apps/api"
+    "test:production": "npm run build && npm run test:production -w apps/api",
+    "users:approve": "npm run users:approve -w apps/api --"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

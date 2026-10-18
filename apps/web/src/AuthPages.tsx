@@ -352,6 +352,7 @@ export function PendingPage() {
     (location.state as { delivery?: Delivery } | null)?.delivery ?? null,
   );
   const [notice, setNotice] = React.useState("");
+  const manual = (delivery?.mode ?? mailMode) === "manual";
   if (user?.emailVerifiedAt) return <Navigate replace to="/" />;
   async function resend() {
     setBusy(true);
@@ -387,12 +388,13 @@ export function PendingPage() {
       <span className="round-icon">
         <MailCheck size={32} />
       </span>
-      <h1>Подтверди почту</h1>
+      <h1>{manual ? "Ожидается допуск к демо" : "Подтверди почту"}</h1>
       <p>
-        Аккаунт <strong>{user?.email}</strong> создан. Осталось подтвердить, что
-        эта почта принадлежит тебе.
+        Аккаунт <strong>{user?.email}</strong> создан. {manual ? "Для входа нужен допуск организатора тестирования." : "Осталось подтвердить, что эта почта принадлежит тебе."}
       </p>
-      {(delivery?.mode ?? mailMode) === "console" ? (
+      {manual ? (
+        <div className="notice"><strong>Закрытое тестирование</strong><p>Письмо не отправляется. Сообщи организатору тестирования адрес, указанный при регистрации. Он подтвердит твой аккаунт вручную. Затем нажми «Проверить допуск».</p></div>
+      ) : (delivery?.mode ?? mailMode) === "console" ? (
         <div className="notice">
           <strong>Режим локальной разработки</strong>
           <p>
@@ -409,7 +411,7 @@ export function PendingPage() {
           </p>
         </div>
       )}
-      {delivery?.sent === false && (
+      {!manual && delivery?.sent === false && (
         <p role="alert" className="form-error">
           Письмо не отправлено. Аккаунт сохранён. Проверь настройки почты и
           запроси письмо повторно через минуту.
@@ -427,11 +429,11 @@ export function PendingPage() {
           disabled={busy}
           onClick={() => void check()}
         >
-          Я подтвердил почту
+          {manual ? "Проверить допуск" : "Я подтвердил почту"}
         </button>
-        <button disabled={busy} onClick={() => void resend()}>
+        {!manual && <button disabled={busy} onClick={() => void resend()}>
           Отправить ссылку ещё раз
-        </button>
+        </button>}
         <button
           className="text-button"
           disabled={busy}

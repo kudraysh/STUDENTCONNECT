@@ -12,7 +12,7 @@ type Auth = {
   user: User | null;
   loading: boolean;
   error: string;
-  mailMode: "console" | "smtp" | "brevo";
+  mailMode: "console" | "smtp" | "brevo" | "manual";
   accept: (session: Session) => void;
   refresh: () => Promise<void>;
   update: (user: User) => void;
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, update] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
-  const [mailMode, setMailMode] = React.useState<"console" | "smtp" | "brevo">("console");
+  const [mailMode, setMailMode] = React.useState<"console" | "smtp" | "brevo" | "manual">("console");
   const accept = React.useCallback((session: Session) => {
     update(session.user);
     setCsrf(session.csrfToken);
