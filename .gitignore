@@ -6,3 +6,8 @@ dist/
 *.log
 coverage/
 .DS_Store
+# Резервные копии и дампы базы никогда не отправляем в репозиторий.
+*.dump
+*.sql.gz
+*.backup
+*.zip

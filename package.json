@@ -1,21 +1,25 @@
 {
   "name": "studentconnect",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.9.0",
   "workspaces": [
     "apps/*"
   ],
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.12 <25"
   },
   "scripts": {
     "dev": "concurrently -k -n API,WEB \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "test": "npm run test -w apps/api",
+    "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run db:generate -w apps/api",
     "db:migrate": "npm run db:migrate -w apps/api",
-    "db:seed": "npm run db:seed -w apps/api"
+    "db:seed": "npm run db:seed -w apps/api",
+    "feedback:list": "npm run feedback:list -w apps/api --",
+    "start": "npm run start -w apps/api",
+    "deploy:start": "npm run db:migrate && npm run db:seed && npm start",
+    "test:production": "npm run build && npm run test:production -w apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

@@ -1,0 +1,34 @@
+# Один бесплатный Node.js-сервис: интерфейс + API + Socket.IO.
+# PostgreSQL создаётся отдельно в Neon Free, а не в Render.
+services:
+  - type: web
+    name: studentconnect
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run db:generate && npm run build
+    startCommand: npm run deploy:start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_WEB
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: COOKIE_SAME_SITE
+        value: lax
+      - key: VITE_API_URL
+        value: ""
+      - key: MAIL_MODE
+        value: brevo
+      - key: BREVO_SENDER_NAME
+        value: StudentConnect
+      - key: DATABASE_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
