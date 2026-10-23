@@ -7,12 +7,14 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test --test-concurrency=1 src/app.test.ts src/accounts.test.ts src/migrations.test.ts src/events.test.ts src/chat.test.ts src/notifications.test.ts src/feed.test.ts src/feedback.test.ts src/deployment.test.ts",
+    "test": "node --import tsx --test --test-concurrency=1 src/app.test.ts src/accounts.test.ts src/migrations.test.ts src/events.test.ts src/chat.test.ts src/notifications.test.ts src/feed.test.ts src/feedback.test.ts src/deployment.test.ts src/safety.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "node --import tsx prisma/seed.ts",
     "feedback:list": "node --import tsx scripts/feedback-list.ts",
-    "test:production": "node --import tsx scripts/smoke-production.ts"
+    "test:production": "node --import tsx scripts/smoke-production.ts",
+    "users:approve": "node --import tsx scripts/approve-user.ts",
+    "safety:reports": "node --import tsx scripts/safety-reports.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",

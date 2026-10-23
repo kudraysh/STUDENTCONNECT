@@ -1,7 +1,7 @@
 {
   "name": "studentconnect",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "workspaces": [
     "apps/*"
   ],
@@ -20,7 +20,8 @@
     "start": "npm run start -w apps/api",
     "deploy:start": "npm run db:migrate && npm run db:seed && npm start",
     "test:production": "npm run build && npm run test:production -w apps/api",
-    "users:approve": "npm run users:approve -w apps/api --"
+    "users:approve": "npm run users:approve -w apps/api --",
+    "safety:reports": "npm run safety:reports -w apps/api --"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

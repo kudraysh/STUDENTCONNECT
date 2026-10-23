@@ -1,3 +1,4 @@
+import { safetyRouter } from "./safety.js";
 import { feedbackRouter } from "./feedback.js";
 import { feedRouter } from "./feed.js";
 import { notificationRouter } from "./notifications.js";
@@ -167,6 +168,7 @@ export function accountRouter({
     };
   };
   async function deliver(email: string, token: string) {
+    if (mailer.mode === "manual") return {mode: "manual", sent: false};
     try {
       await mailer.sendVerification({
         to: email,
@@ -501,6 +503,7 @@ export function accountRouter({
       res.status(201).json({ message: "Жалоба сохранена для рассмотрения" });
     },
   );
+  router.use("/safety", authenticate, verified, safetyRouter({db,csrf,chat:chatService}));
   router.use("/feedback", authenticate, verified, feedbackRouter({ db, csrf }));
   router.use("/notifications", authenticate, verified, notificationRouter({ db, csrf }));
   router.use(

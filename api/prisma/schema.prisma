@@ -39,6 +39,10 @@ model User {
   eventNotices       EventNotice[]
   conversationsA     Conversation[]      @relation("ConversationA")
   conversationsB     Conversation[]      @relation("ConversationB")
+  blocksMade         UserBlock[] @relation("Blocker")
+  blocksReceived     UserBlock[] @relation("Blocked")
+  hiddenMessages     MessageHidden[]
+  safetyReports      SafetyReport[]
   messages           ChatMessage[]
   phoneOwned         PhoneAccess[]       @relation("PhoneOwner")
   phoneRequested     PhoneAccess[]       @relation("PhoneRequester")
@@ -200,6 +204,12 @@ model ChatMessage {
   senderId       String
   clientId       String
   text           String
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  replyToId      Int?
+  replyTo        ChatMessage? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        ChatMessage[] @relation("MessageReplies")
+  hiddenFor      MessageHidden[]
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
@@ -272,4 +282,39 @@ model FeedbackReport {
   @@unique([userId, clientId])
   @@index([userId, createdAt, id])
   @@index([status, createdAt])
+}
+
+model MessageHidden {
+  messageId Int
+  userId String
+  message ChatMessage @relation(fields:[messageId], references:[id], onDelete:Cascade)
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  @@id([messageId,userId])
+  @@index([userId])
+}
+model UserBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker User @relation("Blocker", fields:[blockerId], references:[id], onDelete:Cascade)
+  blocked User @relation("Blocked", fields:[blockedId], references:[id], onDelete:Cascade)
+  @@id([blockerId,blockedId])
+  @@index([blockedId])
+}
+model SafetyReport {
+  id String @id @default(cuid())
+  reporterId String
+  clientId String
+  kind String
+  targetId String
+  reason String
+  details String
+  snapshot Json
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reporter User @relation(fields:[reporterId], references:[id], onDelete:Cascade)
+  @@unique([reporterId,clientId])
+  @@index([status,createdAt])
+  @@index([reporterId,createdAt])
 }
