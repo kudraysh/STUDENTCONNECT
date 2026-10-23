@@ -1,3 +1,4 @@
+import {ReportButton} from "./Safety";
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { CalendarDays, MapPin, Users, RefreshCw, Check, X } from "lucide-react";
@@ -139,6 +140,7 @@ function EventDetail({ id }: { id: string }) {
         <div>
           <article className="form-card">
             <h2>О мероприятии</h2>
+            {!e.isOrganizer&&<ReportButton kind="EVENT" targetId={id}/>}
             <p className="event-description-full">{e.description}</p>
             <h3>Организатор</h3>
             <Link className="event-organizer" to={`/users/${e.organizer.id}`}>

@@ -14,6 +14,8 @@ export type Message = {
   text: string;
   createdAt: string;
   clientId: string;
+  editedAt:string|null;deletedAt:string|null;hiddenForMe:boolean;replyToId:number|null;
+  replyTo:{id:number;senderId:string;text:string;unavailable:boolean}|null;
 };
 export type Grant = {
   id: string;
@@ -26,6 +28,7 @@ export type ChatDetails = {
   id: string;
   peer: ChatPerson & { hasPhone: boolean };
   hasOwnPhone: boolean;
+  blockedByMe:boolean;unavailable:boolean;
   outgoing: Grant | null;
   incoming: Grant | null;
   phone: string | null;

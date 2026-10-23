@@ -42,6 +42,7 @@ export async function findPeople(
 ) {
   const conditions = [
     Prisma.sql`u.id <> ${actor.id}`,
+    Prisma.sql`NOT EXISTS (SELECT 1 FROM "UserBlock" b WHERE (b."blockerId"=${actor.id} AND b."blockedId"=u.id) OR (b."blockedId"=${actor.id} AND b."blockerId"=u.id))`,
     Prisma.sql`u."emailVerifiedAt" IS NOT NULL`,
     Prisma.sql`g.institution = ${"МИЭТ, колледж"}`,
     Prisma.sql`EXISTS (SELECT 1 FROM "UserInterest" ui WHERE ui."userId" = u.id)`,

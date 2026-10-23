@@ -1,3 +1,4 @@
+import {lockPair,assertUnblocked} from "./safety.js";
 import { Router, type RequestHandler, type Response } from "express";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { rateLimit } from "express-rate-limit";
@@ -39,7 +40,8 @@ export function feedRouter({ db, csrf }: { db: PrismaClient; csrf: RequestHandle
     const result=await db.$transaction(async tx=>{
       // Общая блокировка действий аккаунта: несколько вкладок не отправят повторный интерес.
       // NO KEY UPDATE совместим с FK-проверкой адресата при встречных свайпах.
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${id} FOR NO KEY UPDATE`;
+      await lockPair(tx,id,targetId);
+      await assertUnblocked(tx,id,targetId);
       const target=await tx.user.findFirst({where:{id:targetId,emailVerifiedAt:{not:null},group:{institution:"МИЭТ, колледж"},interests:{some:{}}},select:{id:true}});
       if (!target) throw new ApiError(404,"Студент недоступен в ленте");
       const user=await tx.user.findUniqueOrThrow({where:{id},select:{feedTutorialCount:true,firstName:true,lastName:true}});

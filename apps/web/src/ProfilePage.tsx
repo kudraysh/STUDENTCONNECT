@@ -1,3 +1,4 @@
+import {UserSafety,BlockedUsers} from "./Safety";
 import { StartChatButton } from "./StartChatButton";
 import React from "react";
 import { Link, useParams } from "react-router-dom";
@@ -146,6 +147,7 @@ export function ProfilePage() {
           </fieldset>
         </form>
       </div>
+      <BlockedUsers/>
     </>
   );
 }
@@ -207,7 +209,7 @@ export function PublicProfilePage() {
       <p className="field-help">
         Почта и телефон в публичном профиле не отображаются.
       </p>
-      {viewer?.id !== user.id && <StartChatButton peerId={user.id} />}
+      {viewer?.id !== user.id && <><StartChatButton peerId={user.id} /><UserSafety key={user.id} userId={user.id}/></>}
       <Link className="secondary" to="/">
         К списку студентов
       </Link>

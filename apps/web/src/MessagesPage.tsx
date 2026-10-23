@@ -1,3 +1,4 @@
+import {ReportButton,UserSafety} from "./Safety";
 import { newClientId } from "./clientIds";
 import React from "react";
 import { Link, NavLink, useParams } from "react-router-dom";
@@ -165,9 +166,14 @@ function Thread({ id }: { id: string }) {
   const [error, setError] = React.useState("");
   const [olderBusy, setOlderBusy] = React.useState(false);
   const [text, setText] = React.useState("");
+  const [reply,setReply]=React.useState<Message|null>(null);
+  const [editing,setEditing]=React.useState<Message|null>(null);
+  const [emojiOpen,setEmojiOpen]=React.useState(false);
+  const [actionBusy,setActionBusy]=React.useState(false);
+  const composer=React.useRef<HTMLTextAreaElement>(null);
   const [sending, setSending] = React.useState(false);
   const [sendError, setSendError] = React.useState("");
-  const pending = React.useRef<{ text: string; clientId: string } | null>(null);
+  const pending = React.useRef<{ text: string; clientId: string;replyToId?:number } | null>(null);
   const scroller = React.useRef<HTMLDivElement>(null);
   const nearBottom = React.useRef(true);
   const update = React.useCallback((rows: Message[], replace = false) => {
@@ -211,6 +217,11 @@ function Thread({ id }: { id: string }) {
         if (!active) return;
         setDetails(detail);
         setError("");
+        const ids=messagesRef.current.map(m=>m.id);
+        for(let offset=0;offset<ids.length;offset+=100){
+          const changed=await api<{messages:Message[]}>(`/chat/conversations/${id}/messages?ids=${ids.slice(offset,offset+100).join(",")}`);
+          if(!active)return;update(changed.messages);
+        }
         let after = messagesRef.current.at(-1)?.id ?? 0;
         for (let n = 0; n < 50; n++) {
           const data = await api<{ messages: Message[]; hasMore: boolean }>(
@@ -291,15 +302,19 @@ function Thread({ id }: { id: string }) {
   }
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || sending) return;
+    if (!text.trim() || sending || details?.unavailable) return;
     setSending(true);
     setSendError("");
     const body = text.trim();
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 15000);
     try {
-      if (pending.current?.text !== body)
-        pending.current = { text: body, clientId: newClientId(window.crypto) };
+      if(editing){
+        await api(`/chat/conversations/${id}/messages/${editing.id}`,{method:"PATCH",body:{text:body},signal:controller.signal});
+        setEditing(null);setText("");refresh();return;
+      }
+      if (pending.current?.text !== body || pending.current?.replyToId !== reply?.id)
+        pending.current = { text: body, clientId: newClientId(window.crypto),...(reply?{replyToId:reply.id}:{}) };
       const result = await api<{ message: Message }>(
         `/chat/conversations/${id}/messages`,
         { method: "POST", body: pending.current, signal: controller.signal },
@@ -307,6 +322,7 @@ function Thread({ id }: { id: string }) {
       nearBottom.current = true;
       update([result.message]);
       setText("");
+      setReply(null);
       pending.current = null;
       refresh();
     } catch (e) {
@@ -315,6 +331,18 @@ function Thread({ id }: { id: string }) {
       window.clearTimeout(timer);
       setSending(false);
     }
+  }
+  async function remove(m:Message,scope:"self"|"everyone"){
+    if(!window.confirm(scope==="everyone"?"Удалить своё сообщение у всех? Отменить это действие нельзя.":"Скрыть сообщение только у себя? Собеседник продолжит его видеть."))return;
+    setActionBusy(true);setError("");
+    try{await api(`/chat/conversations/${id}/messages/${m.id}`,{method:"DELETE",body:{scope}});if(reply?.id===m.id)setReply(null);if(editing?.id===m.id){setEditing(null);setText("");}refresh();}
+    catch(e){setError(errorMessage(e));}finally{setActionBusy(false);}
+  }
+  function addEmoji(value:string){
+    const el=composer.current,start=el?.selectionStart??text.length,end=el?.selectionEnd??text.length;
+    if(text.length-(end-start)+value.length>4000)return;
+    setText(text.slice(0,start)+value+text.slice(end));
+    requestAnimationFrame(()=>{el?.focus();el?.setSelectionRange(start+value.length,start+value.length);});
   }
   if (loading)
     return (
@@ -352,12 +380,14 @@ function Thread({ id }: { id: string }) {
           </span>
         </Link>
       </div>
-      <ChatPhone
+      <UserSafety userId={details.peer.id} onChange={()=>refresh()}/>
+      {details.unavailable && <p className="notice" role="status">Общение ограничено блокировкой. История переписки сохранена.</p>}
+      {!details.unavailable && <ChatPhone
         details={details}
         onInvalidate={() => {
           setDetails((d) => (d ? { ...d, phone: null } : d));
         }}
-      />
+      />}
       {error && (
         <p role="alert" className="form-error">
           {error}
@@ -384,37 +414,48 @@ function Thread({ id }: { id: string }) {
             {olderBusy ? "Загрузка…" : "Загрузить более ранние"}
           </button>
         )}
-        {!messages.length && (
+        {!messages.some(m=>!m.hiddenForMe) && (
           <p className="chat-first-message">
             У вас уже есть общее — начни с приветствия.
           </p>
         )}
-        {messages.map((m, index) => (
+        {messages.filter(m=>!m.hiddenForMe).map((m, index,visible) => (
           <React.Fragment key={m.id}>
             {(index === 0 ||
-              messageDay(messages[index - 1].createdAt) !==
+              messageDay(visible[index - 1].createdAt) !==
                 messageDay(m.createdAt)) && (
               <div className="message-day">{messageDay(m.createdAt)}</div>
             )}
             <div
               className={`message-row ${m.senderId === user?.id ? "own" : ""}`}
             >
-              <div className="message-bubble">
-                <p>{m.text}</p>
-                <time dateTime={m.createdAt}>{messageTime(m.createdAt)}</time>
+              <div className={`message-bubble ${m.deletedAt?"deleted-message":""}`} id={`message-${m.id}`}>
+                {m.replyTo&&!m.deletedAt&&<blockquote className="message-reply"><strong>{m.replyTo.senderId===user?.id?"Ты":"Собеседник"}</strong><span>{m.replyTo.text}</span></blockquote>}
+                <p>{m.deletedAt?"Сообщение удалено":m.text}</p>
+                <div className="message-meta"><time dateTime={m.createdAt}>{m.editedAt&&!m.deletedAt?"изменено · ":""}{messageTime(m.createdAt)}</time>
+                <details className="message-menu"><summary aria-label="Действия с сообщением">•••</summary><div>
+                  {!m.deletedAt&&!details.unavailable&&<button type="button" disabled={actionBusy||sending} onClick={()=>{setReply(m);setEditing(null);composer.current?.focus();}}>Ответить</button>}
+                  {m.senderId===user?.id&&!m.deletedAt&&!details.unavailable&&<button type="button" disabled={actionBusy||sending} onClick={()=>{setEditing(m);setReply(null);setText(m.text);composer.current?.focus();}}>Редактировать</button>}
+                  <button type="button" disabled={actionBusy||sending} onClick={()=>void remove(m,"self")}>Удалить у себя</button>
+                  {m.senderId===user?.id&&!m.deletedAt&&<button type="button" disabled={actionBusy||sending} onClick={()=>void remove(m,"everyone")}>Удалить у всех</button>}
+                  {m.senderId!==user?.id&&!m.deletedAt&&<ReportButton kind="MESSAGE" targetId={String(m.id)}/>}
+                </div></details></div>
               </div>
             </div>
           </React.Fragment>
         ))}
       </div>
-      <form className="message-composer" onSubmit={(e) => void send(e)}>
+      {!details.unavailable&&<form className="message-composer" onSubmit={(e) => void send(e)}>
         {sendError && (
           <p role="alert" className="form-error">
             {sendError} Текст сохранён в поле — можно повторить отправку.
           </p>
         )}
+        {(editing||reply)&&<div className="composer-context"><span><strong>{editing?"Редактирование":"Ответ на сообщение"}</strong><small>{(editing??reply)?.text}</small></span><button type="button" disabled={sending} aria-label="Отменить редактирование или ответ" onClick={()=>{if(editing)setText("");setEditing(null);setReply(null);}}>✕</button></div>}
+        <button type="button" className="emoji-toggle" aria-label="Выбрать смайлик" aria-expanded={emojiOpen} disabled={sending} onClick={()=>setEmojiOpen(v=>!v)}>☺ Смайлики</button>
+        {emojiOpen&&<div className="emoji-picker" role="group" aria-label="Смайлики">{["😀","😃","😄","😁","😂","🤣","😊","😉","😍","🥰","😘","😎","🤔","🙃","😅","😭","😢","😡","😱","🥳","👍","👎","👏","🙌","🤝","🙏","❤️","💔","🔥","✨","🎉","💯","👀","💪","🏀","🎮","📚","☕","✅","👋"].map(emoji=><button key={emoji} type="button" aria-label={`Добавить ${emoji}`} onClick={()=>addEmoji(emoji)}>{emoji}</button>)}</div>}
         <div>
-          <textarea
+          <textarea ref={composer}
             aria-label="Текст сообщения"
             placeholder="Напиши что-нибудь…"
             value={text}
@@ -437,7 +478,7 @@ function Thread({ id }: { id: string }) {
           <button
             className="primary"
             disabled={sending || !text.trim()}
-            aria-label="Отправить сообщение"
+            aria-label={editing?"Сохранить сообщение":"Отправить сообщение"}
           >
             <Send size={18} />
           </button>
@@ -448,7 +489,7 @@ function Thread({ id }: { id: string }) {
             ? " · Переподключаемся, история обновляется автоматически"
             : ""}
         </span>
-      </form>
+      </form>}
     </div>
   );
 }
